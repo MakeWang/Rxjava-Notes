@@ -14,6 +14,11 @@ Rxjava的一些操作符整理
 * [intervalRange() 每隔指定时间，可以指定发送事件的数量发送事件](#intervalRange)
 * [range() 指定一个范围内发送事件](#range)
 
+## 变换操作符
+* [map() 将一个事件类型转换成你想要的数据类型并返回](#map)
+* [flatMap() 将一个事件拆分后组成一个新的事件发送，是无序排列](#flatMap)
+* [concatMap() 将一个事件拆分后组成一个新的事件发送，是有序排列](#concatMap)
+
 
 just
 ----------------------------------
@@ -159,23 +164,116 @@ Observable.range(1,10).subscribe(new Consumer<Integer>() {
 ```
 
 
+map
+-----------------------------------------------------------
+作用：对被观察者发送的每1个事件都通过指定的函数处理，从而变换成另外一种事件即，将被观察者发送的事件转换为任意的类型事件</br>
+```java
+Observable.create(new ObservableOnSubscribe<Integer>() {
+    @Override
+    public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        emitter.onNext(1);
+        emitter.onNext(2);
+        emitter.onNext(3);
+        emitter.onComplete();
+    }
+}).map(new Function<Integer, String>() {
+    @Override
+    public String apply(Integer integer) throws Exception {
+        return integer + "只小鸭子";
+    }
+}).subscribe(new Consumer<String>() {
+    @Override
+    public void accept(String s) throws Exception {
+        log(s);
+    }
+});
+```
 
 
 
 
+flatMap
+----------------------------------------------------------------
+作用：将被观察者发送的事件序列进行拆分或单独转换，再合并成一个新的事件序列，最后再进行发送</br>
+```java
+Observable.create(new ObservableOnSubscribe<Integer>() {
+    @Override
+    public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        emitter.onNext(1);
+        emitter.onNext(2);
+        emitter.onNext(3);
+        emitter.onComplete();
+    }
+}).flatMap(new Function<Integer, ObservableSource<String>>() {
+    @Override
+    public ObservableSource<String> apply(Integer integer) throws Exception {
+        List<String> list = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            list.add(integer + "栋"+i+"号");
+        }
+        return Observable.fromIterable(list);
+    }
+}).subscribe(new Consumer<String>() {
+    @Override
+    public void accept(String s) throws Exception {
+        log(s);
+    }
+});
+
+----------------结果----------------
+I/wangyin: 2栋0号
+I/wangyin: 2栋1号
+I/wangyin: 2栋2号
+I/wangyin: 1栋0号
+I/wangyin: 1栋1号
+I/wangyin: 1栋2号
+I/wangyin: 3栋0号
+I/wangyin: 3栋1号
+I/wangyin: 3栋2号
+
+```
 
 
 
+concatMap
+-------------------------------------------------------
+作用：拆分或重新合并生成的事件序列的顺序被观察者旧序列生产的顺序</br>
+```java
+Observable.create(new ObservableOnSubscribe<Integer>() {
+    @Override
+    public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        emitter.onNext(1);
+        emitter.onNext(2);
+        emitter.onNext(3);
+        emitter.onComplete();
+    }
+}).concatMap(new Function<Integer, ObservableSource<String>>() {
+    @Override
+    public ObservableSource<String> apply(Integer integer) throws Exception {
+        List<String> list = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            list.add(integer + "栋"+i+"号");
+        }
+        return Observable.fromIterable(list);
+    }
+}).subscribe(new Consumer<String>() {
+    @Override
+    public void accept(String s) throws Exception {
+        log(s);
+    }
+});
 
 
-
-
-
-
-
-
-
-
-
+----------------结果----------------
+I/wangyin: 1栋0号
+I/wangyin: 1栋1号
+I/wangyin: 1栋2号
+I/wangyin: 2栋0号
+I/wangyin: 2栋1号
+I/wangyin: 2栋2号
+I/wangyin: 3栋0号
+I/wangyin: 3栋1号
+I/wangyin: 3栋2号
+```
 
 
