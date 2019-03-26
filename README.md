@@ -9,6 +9,11 @@ Rxjava的一些操作符整理
 
 ## 延时发送事件
 * [defer() 只有在订阅的时候才会创建被观察者](#defer)
+* [timer() 延时指定时间发送事件](#timer)
+* [interval() 每隔指定时间，无限发送事件](#interval)
+* [intervalRange() 每隔指定时间，可以指定发送事件的数量发送事件](#intervalRange)
+* [range() 指定一个范围内发送事件](#range)
+
 
 just
 ----------------------------------
@@ -75,9 +80,102 @@ observable.subscribe(new Consumer<Integer>() {
 });
 
 ------结果-------
-2019-03-26 14:26:42.390 26835-26835/com.wy.video I/wangyin: 赋值
-2019-03-26 14:26:42.390 26835-26835/com.wy.video I/wangyin: 创建
-2019-03-26 14:26:42.391 26835-26835/com.wy.video I/wangyin: 值是：2
+I/wangyin: 赋值
+I/wangyin: 创建
+I/wangyin: 值是：2
+```
+
+timer
+----------------------------------------------------
+作用：快速创建一个被观察者，延时指定时间发送事件</br>
+```java
+//延长3秒发送事件
+Observable.timer(3, TimeUnit.SECONDS).subscribe(new Consumer<Long>() {
+    @Override
+    public void accept(Long aLong) throws Exception {
+        log("返回：" + aLong);
+    }
+});
+```
+
+interval
+---------------------------------------
+作用：快速创建一个被观察者，延时指定时间，无限递增发送事件</br>
+```java
+// 参数1   =    第一次延迟时间
+// 参数2   =    延迟间隔时间
+// 参数3   =    时间单位
+Observable.interval(0, 3, TimeUnit.SECONDS).subscribe(new Consumer<Long>() {
+    @Override
+    public void accept(Long aLong) throws Exception {
+        log("执行：" + aLong);
+    }
+});
+```
+
+intervalRange
+----------------------------------------
+作用：快速创建一个被观察者，延时指定时间，可指定发送数量事件</br>
+```java
+// 参数1   =     事件序列起点
+// 参数2   =     事件数量
+// 参数3   =     第一次事件延迟发送时间
+// 参数4   =     间隔时间
+// 参数5   =     时间单位
+Observable.intervalRange(2, 10, 1, 2, TimeUnit.SECONDS).subscribe(new Consumer<Long>() {
+    @Override
+    public void accept(Long aLong) throws Exception {
+        log("开始：" + aLong);
+    }
+});
+
+----------结果------------
+I/wangyin: 开始：2
+I/wangyin: 开始：3
+I/wangyin: 开始：4
+I/wangyin: 开始：5
+I/wangyin: 开始：6
+I/wangyin: 开始：7
+I/wangyin: 开始：8
+I/wangyin: 开始：9
+I/wangyin: 开始：10
+I/wangyin: 开始：11
+```
+
+
+range
+-------------------------------------
+作用：快速创建一个被观察者，指定一个范围内发送事件，参数不能不为负数，不能延时发送事件</br>
+```java
+// 参数1    =    事件序列起点
+// 参数2    =    事件数量
+Observable.range(1,10).subscribe(new Consumer<Integer>() {
+    @Override
+    public void accept(Integer integer) throws Exception {
+        log("值："+integer);
+    }
+});
 
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
