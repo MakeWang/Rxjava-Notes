@@ -18,6 +18,16 @@ Rxjava的一些操作符整理
 * [map() 将一个事件类型转换成你想要的数据类型并返回](#map)
 * [flatMap() 将一个事件拆分后组成一个新的事件发送，是无序排列](#flatMap)
 * [concatMap() 将一个事件拆分后组成一个新的事件发送，是有序排列](#concatMap)
+* [buffer() 每次获取一定数量的事件放到缓存区中并发送](#buffer)
+
+## 组合/合并操作符
+* [concat() 组合多个被观察者发送数据，合并按顺序执行，数量 <= 4](#concat)
+* [concatArray() 组合多个被观察者发送数据，合并按顺序执行，数量 > 4](#concatArray)
+* [merge() 组合多个被观察者发送数据，合并按照时间顺序，数量 <= 4](#merge)
+* [mergeArray() 组合多个被观察者发送数据，合并按照时间顺序，数量 > 4](#mergeArray)
+* [concatDelayError() 异常捕获，发生异常也会继续执行，按顺序执行](#concatDelayError)
+* [mergeDelayError() 异常捕获，发生异常也会继续执行，按时间执行](#mergeDelayError)
+* [zip() 针对多个被观察者事件进行合并](#zip)
 
 
 just
@@ -275,5 +285,299 @@ I/wangyin: 3栋0号
 I/wangyin: 3栋1号
 I/wangyin: 3栋2号
 ```
+
+
+buffer
+------------------------------------------------------
+作用：定期从被观察者（Obervable）需要发送的事件中获取一定数量的事件或放到缓存区中，最终发送</br>
+```java
+// 参数1   =    缓存区大小
+// 参数2   =    步长
+Observable.just(1,2,3,4,5).buffer(3,1).subscribe(new Consumer<List<Integer>>() {
+    @Override
+    public void accept(List<Integer> integers) throws Exception {
+        log("缓存区数量："+integers.size());
+        for (Integer item : integers) {
+            log("缓存数据："+item);
+        }
+    }
+});
+
+
+I/wangyin: 缓存区数量：3
+I/wangyin: 缓存数据：1
+I/wangyin: 缓存数据：2
+I/wangyin: 缓存数据：3
+I/wangyin: 缓存区数量：3
+I/wangyin: 缓存数据：2
+I/wangyin: 缓存数据：3
+I/wangyin: 缓存数据：4
+I/wangyin: 缓存区数量：3
+I/wangyin: 缓存数据：3
+I/wangyin: 缓存数据：4
+I/wangyin: 缓存数据：5
+I/wangyin: 缓存区数量：2
+I/wangyin: 缓存数据：4
+I/wangyin: 缓存数据：5
+I/wangyin: 缓存区数量：1
+I/wangyin: 缓存数据：5
+
+```
+
+
+concat
+-------------------------------------------
+作用：合多个被观察者一起发送数据，合并后按发送顺序串行执行,观察者数量≤4</br>
+```java
+Observable.concat(Observable.just(1, 2, 3),
+        Observable.just(1, 2, 3),
+        Observable.just(4, 5, 6),
+        Observable.just(7, 8, 9)).subscribe(new Consumer<Integer>() {
+    @Override
+    public void accept(Integer integer) throws Exception {
+        log(String.valueOf(integer));
+    }
+});
+
+```
+
+
+concatArray
+-------------------------------------------
+作用：合多个被观察者一起发送数据，合并后按发送顺序串行执行,观察者数量>4</br>
+```java
+Observable.concatArray(Observable.just(1, 2, 3),
+        Observable.just(1, 2, 3),
+        Observable.just(4, 5, 6),
+        Observable.just(7, 8, 9),
+        Observable.just(10,11,12)).subscribe(new Consumer<Integer>() {
+    @Override
+    public void accept(Integer integer) throws Exception {
+        log(String.valueOf(integer));
+    }
+});
+
+```
+
+
+merge
+--------------------------------------------
+作用：组合多个被观察者一起发送数据，合并后按时间线并行执行,观察者数量≤4</br>
+```java
+Observable.merge(Observable.intervalRange(0, 3, 1, 1, TimeUnit.SECONDS),
+        Observable.intervalRange(2, 3, 1, 1, TimeUnit.SECONDS)).subscribe(new Consumer<Long>() {
+    @Override
+    public void accept(Long aLong) throws Exception {
+        log(String.valueOf(aLong));
+    }
+});
+```
+
+mergeArray
+--------------------------------------------
+作用：组合多个被观察者一起发送数据，合并后按时间线并行执行,观察者数量>4</br>
+```java
+Observable.mergeArray(Observable.intervalRange(0, 3, 1, 1, TimeUnit.SECONDS),
+        Observable.intervalRange(2, 3, 1, 1, TimeUnit.SECONDS)).subscribe(new Consumer<Long>() {
+    @Override
+    public void accept(Long aLong) throws Exception {
+        log(String.valueOf(aLong));
+    }
+});
+```
+
+
+
+concatDelayError
+------------------------------------------------------------
+作用：异常捕获，发生异常也会继续执行，按顺序执行</br>
+```java
+Observable<Integer> o1 = Observable.create(new ObservableOnSubscribe<Integer>() {
+    @Override
+    public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        emitter.onNext(1);
+        emitter.onNext(2);
+        emitter.onError(new NullPointerException());
+        emitter.onNext(3);
+    }
+});
+Observable<Integer> o2 = Observable.create(new ObservableOnSubscribe<Integer>() {
+    @Override
+    public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        emitter.onNext(4);
+        emitter.onNext(5);
+    }
+});
+
+Observable.concatArrayDelayError(o1,o2).subscribe(new Observer<Integer>() {
+    @Override
+    public void onSubscribe(Disposable d) {
+
+    }
+
+    @Override
+    public void onNext(Integer integer) {
+        log("结果："+integer);
+    }
+
+    @Override
+    public void onError(Throwable e) {
+        log("发送异常");
+    }
+
+    @Override
+    public void onComplete() {
+
+    }
+});
+
+----------结果------------------------
+I/wangyin: 结果：1
+I/wangyin: 结果：2
+I/wangyin: 结果：4
+I/wangyin: 结果：5
+
+```
+
+mergeArrayDelayError
+------------------------------------------------------------
+作用：异常捕获，发生异常也会继续执行，按时间顺序执行</br>
+```java
+Observable<Integer> o1 = Observable.create(new ObservableOnSubscribe<Integer>() {
+    @Override
+    public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        emitter.onNext(1);
+        emitter.onNext(2);
+        emitter.onError(new NullPointerException());
+        emitter.onNext(3);
+    }
+});
+Observable<Integer> o2 = Observable.create(new ObservableOnSubscribe<Integer>() {
+    @Override
+    public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        emitter.onNext(4);
+        emitter.onNext(5);
+    }
+});
+
+Observable.mergeArrayDelayError(o1,o2).subscribe(new Observer<Integer>() {
+    @Override
+    public void onSubscribe(Disposable d) {
+
+    }
+
+    @Override
+    public void onNext(Integer integer) {
+        log("结果："+integer);
+    }
+
+    @Override
+    public void onError(Throwable e) {
+        log("发送异常");
+    }
+
+    @Override
+    public void onComplete() {
+
+    }
+});
+
+----------结果------------------------
+I/wangyin: 结果：1
+I/wangyin: 结果：2
+I/wangyin: 结果：4
+I/wangyin: 结果：5
+
+```
+
+
+
+zip
+-------------------------------------------
+作用：合并多个被观察者（Observable）发送的事件，生成一个新的事件序列（即组合过后的事件序列），并最终发送</br>
+```java
+Observable<String> o2 = Observable.create(new ObservableOnSubscribe<String>() {
+    @Override
+    public void subscribe(ObservableEmitter<String> emitter) throws Exception {
+        emitter.onNext("A");
+        Thread.sleep(2000);
+        emitter.onNext("B");
+        Thread.sleep(2000);
+        emitter.onNext("C");
+        Thread.sleep(2000);
+        emitter.onNext("D");
+        Thread.sleep(2000);
+        emitter.onComplete();
+    }
+});
+
+Observable<String> o3 = Observable.create(new ObservableOnSubscribe<String>() {
+    @Override
+    public void subscribe(ObservableEmitter<String> emitter) throws Exception {
+        emitter.onNext("A");
+        Thread.sleep(2000);
+        emitter.onNext("B");
+        Thread.sleep(2000);
+        emitter.onNext("C");
+        Thread.sleep(2000);
+        emitter.onNext("D");
+        Thread.sleep(2000);
+        emitter.onComplete();
+    }
+});
+Observable.zip(o1, o2, new BiFunction<Integer, String, String>() {
+    @Override
+    public String apply(Integer integer, String s) throws Exception {
+        return integer + s;
+    }
+}).subscribe(new Consumer<String>() {
+    @Override
+    public void accept(String s) throws Exception {
+        log("数据拿到：" + s);
+    }
+});
+
+-----------结果-----------------
+I/wangyin: 数据拿到：1A
+I/wangyin: 数据拿到：2B
+I/wangyin: 数据拿到：3C
+I/wangyin: 数据拿到：onComplete
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
