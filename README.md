@@ -31,6 +31,8 @@ Rxjava的一些操作符整理
 * [combineLatest() 和zip事件合并一样，按照时间来合并](#combineLatest)
 * [combineLatestDelayError() combineLatest事件合并异常处理](#combineLatestDelayError)
 * [reduce() 将一个被观察者前2个数据聚合后，再进行聚合合并后一起输出](#reduce)
+* [collect() 将数据收集到一个数据结构中](#collect)
+* [startWith() 在被观察者前面追加一些新的被观察者数据](#startWith)
 
 
 just
@@ -607,22 +609,42 @@ I/wangyin: 2 * 3
 I/wangyin: 6 * 4
 I/wangyin: 结果：24
 
+```
 
+
+
+collect
+-----------------------------------------------------------
+作用：将被观察者Observable发送的数据事件收集到一个数据结构里</br>
+```java
+Observable.just(1, 2, 3, 4, 5, 6).collect(new Callable<ArrayList<Integer>>() {
+    //创建一个数据容器，用于收集被观察者发送的数据
+    @Override
+    public ArrayList<Integer> call() throws Exception {
+        return new ArrayList<>();
+    }
+}, new BiConsumer<ArrayList<Integer>, Integer>() {
+    //对发送者数据进行收集
+    @Override
+    public void accept(ArrayList<Integer> integers, Integer integer) throws Exception {
+        integers.add(integer);
+    }
+}).subscribe(new Consumer<ArrayList<Integer>>() {
+    @Override
+    public void accept(ArrayList<Integer> integers) throws Exception {
+        for (Integer integer : integers) {
+            log("值：" + integer);
+        }
+    }
+});
 
 ```
 
 
 
-
-
-
-
-
-
-
-
-
-
+startWith
+-----------------------------------------------
+作用：在一个被观察者发送事件前，追加发送一些数据/一个新的被观察者</br>
 
 
 
