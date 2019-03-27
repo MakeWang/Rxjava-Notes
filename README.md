@@ -27,7 +27,10 @@ Rxjava的一些操作符整理
 * [mergeArray() 组合多个被观察者发送数据，合并按照时间顺序，数量 > 4](#mergeArray)
 * [concatDelayError() 异常捕获，发生异常也会继续执行，按顺序执行](#concatDelayError)
 * [mergeDelayError() 异常捕获，发生异常也会继续执行，按时间执行](#mergeDelayError)
-* [zip() 针对多个被观察者事件进行合并](#zip)
+* [zip() 针对多个被观察者事件进行合并，按照个数合并](#zip)
+* [combineLatest() 和zip事件合并一样，按照时间来合并](#combineLatest)
+* [combineLatestDelayError() combineLatest事件合并异常处理](#combineLatestDelayError)
+* [reduce() 将一个被观察者前2个数据聚合后，再进行聚合合并后一起输出](#reduce)
 
 
 just
@@ -546,15 +549,67 @@ I/wangyin: 数据拿到：onComplete
 ```
 
 
+combineLatest
+----------------------------------------
+作用：当两个Observables中的任何一个发送了数据后，将先发送了数据的Observables 的最新（最后）一个数据与另外一个Observable发送的每个数据结合，最终基于该函数的结果发送数据</br>
+```java
+Observable.combineLatest(Observable.just(1L, 2L, 3L), Observable.intervalRange(0, 3, 1, 1, TimeUnit.SECONDS), new BiFunction<Long, Long, Long>() {
+    @Override
+    public Long apply(Long integer, Long aLong) throws Exception {
+        Log.i("wangyin", "合并结果：" + integer + "+" + aLong);
+        return integer + aLong;
+    }
+}).subscribe(new Consumer<Long>() {
+    @Override
+    public void accept(Long s) throws Exception {
+        Log.i("wangyin", "结果：" + s);
+    }
+});
+
+-------------结果-----------------
+I/wangyin: 合并结果：3+0
+I/wangyin: 结果：3
+I/wangyin: 合并结果：3+1
+I/wangyin: 结果：4
+I/wangyin: 合并结果：3+2
+I/wangyin: 结果：5
+
+```
+
+
+combineLatestDelayError
+-------------------------------------------
+作用：作用类似于concatDelayError（） / mergeDelayError（） ，即错误处理</br>
 
 
 
+reduce
+------------------------------------------------------------
+作用：把被观察者需要发送的事件聚合成1个事件&发送</br>
+```java
+Observable.just(1,2,3,4).reduce(new BiFunction<Integer, Integer, Integer>() {
+    @Override
+    public Integer apply(Integer integer, Integer integer2) throws Exception {
+        log(integer + " * " + integer2);
+        return integer * integer2;
+    }
+}).subscribe(new Consumer<Integer>() {
+    @Override
+    public void accept(Integer integer) throws Exception {
+        log("结果："+integer);
+    }
+});
+
+
+----------结果----------------------
+I/wangyin: 1 * 2
+I/wangyin: 2 * 3
+I/wangyin: 6 * 4
+I/wangyin: 结果：24
 
 
 
-
-
-
+```
 
 
 
