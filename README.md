@@ -1,6 +1,10 @@
 # Rxjava-Notes
 Rxjava的一些操作符整理
 ==============================
+```java
+implementation 'io.reactivex.rxjava2:rxjava:2.2.3'
+implementation 'io.reactivex.rxjava2:rxandroid:2.1.0'
+```
 
 ## 快速创建事件<br/>
 * [just() 直接发送事件，最多只能发送10个参数](#just)
