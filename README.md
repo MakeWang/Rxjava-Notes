@@ -43,6 +43,12 @@ implementation 'io.reactivex.rxjava2:rxandroid:2.1.0'
 ## 功能性操作符
 * [delay() 延时多次时间执行观察者事件](#delay)
 * [do() 某个事件中的生命周期调用](#do)
+* [onErrorReturn() 异常捕获，终止事件](#onErrorReturn)
+* [onErrorResumeNext() 异常捕获，重新发送一个被观察者事件](#onErrorResumeNext)
+* [onExceptionResumeNext() 异常捕获，将原来的被观察者重新发送事件](#onExceptionResumeNext)
+* [retry() 重试,出现异常时，让观察者重新发送数据](#retry)
+* [retryUntil() 和retry一样，出现错误后，判断是否需要重新发送数据](#retryUntil)
+* [repeat() 重复创建被观察者发送数据](#repeat)
 
 
 
@@ -878,5 +884,288 @@ I/wangyin: 最后执行
 I/wangyin: doAfterTerminate 发送事件完毕后或异常终止
 
 ```
+
+
+
+
+onErrorReturn
+----------------------------------------------
+作用：遇到错误时，发送1个特殊事件&正常终止</br>
+```java
+Observable.create(new ObservableOnSubscribe<Integer>() {
+    @Override
+    public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        emitter.onNext(1);
+        emitter.onNext(2);
+        emitter.onError(new NullPointerException());
+        emitter.onNext(4);
+    }
+}).onErrorReturn(new Function<Throwable, Integer>() {
+    @Override
+    public Integer apply(Throwable throwable) throws Exception {
+        log("发现异常");
+        return 3;
+    }
+}).subscribe(new Consumer<Integer>() {
+    @Override
+    public void accept(Integer integer) throws Exception {
+        log("值："+integer);
+    }
+});
+
+
+------------结果-------------------------------
+I/wangyin: 值：1
+I/wangyin: 值：2
+I/wangyin: 发现异常
+I/wangyin: 值：3
+
+
+
+```
+
+
+
+onErrorResumeNext
+----------------------------------------
+作用：遇到错误时，发送1个新的Observable</br>
+```java
+Observable.create(new ObservableOnSubscribe<Integer>() {
+    @Override
+    public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        emitter.onNext(1);
+        emitter.onNext(2);
+        emitter.onError(new NullPointerException());
+        emitter.onNext(4);
+    }
+}).onErrorResumeNext(new Function<Throwable, ObservableSource<? extends Integer>>() {
+    @Override
+    public ObservableSource<? extends Integer> apply(Throwable throwable) throws Exception {
+        log("发送异常");
+        return Observable.just(5,6);
+    }
+}).subscribe(new Consumer<Integer>() {
+    @Override
+    public void accept(Integer integer) throws Exception {
+        log("值："+integer);
+    }
+});
+
+
+-------------结果----------------------------
+I/wangyin: 值：1
+I/wangyin: 值：2
+I/wangyin: 发送异常
+I/wangyin: 值：5
+I/wangyin: 值：6
+
+```
+
+
+
+onExceptionResumeNext
+------------------------------------------
+作用：遇到错误时，使用原来的被观察者继续发送事件的Observable</br>
+```java
+Observable.create(new ObservableOnSubscribe<Integer>() {
+    @Override
+    public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        emitter.onNext(1);
+        emitter.onNext(2);
+        emitter.onError(new NullPointerException());
+        emitter.onNext(4);
+    }
+}).onExceptionResumeNext(new Observable<Integer>() {
+    @Override
+    protected void subscribeActual(Observer<? super Integer> observer) {
+        log("发现异常");
+        observer.onNext(5);
+        observer.onNext(6);
+    }
+}).subscribe(new Consumer<Integer>() {
+    @Override
+    public void accept(Integer integer) throws Exception {
+        log("值："+integer);
+    }
+});
+
+------------结果-----------------
+I/wangyin: 值：1
+I/wangyin: 值：2
+I/wangyin: 发现异常
+I/wangyin: 值：5
+I/wangyin: 值：6
+
+```
+
+
+retry
+----------------------------------------------
+作用：重试，即当出现错误时，让被观察者（Observable）重新发射数据</br>
+```java
+
+//1、 retry() 发现错误，会一直不但的重新发送事件
+Observable.create(new ObservableOnSubscribe<Integer>() {
+    @Override
+    public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        emitter.onNext(1);
+        emitter.onNext(2);
+        emitter.onError(new NullPointerException());
+        emitter.onNext(3);
+    }
+}).retry().subscribe(new Consumer<Integer>() {
+    @Override
+    public void accept(Integer integer) throws Exception {
+        log("值："+integer);
+    }
+});
+
+
+//2、 retry(long time)   //第一个参数：重试的次数
+
+//3、retry(Predicate predicate) 出现错误，判断逻辑，是否需要重新发送    true：重新发送    false：停止
+Observable.create(new ObservableOnSubscribe<Integer>() {
+    @Override
+    public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        emitter.onNext(1);
+        emitter.onNext(2);
+        emitter.onError(new NullPointerException());
+        emitter.onNext(3);
+    }
+}).retry(new Predicate<Throwable>() {
+    @Override
+    public boolean test(Throwable throwable) throws Exception {
+        return true;
+    }
+}).subscribe(new Consumer<Integer>() {
+    @Override
+    public void accept(Integer integer) throws Exception {
+        log("值："+integer);
+    }
+});
+
+// 4、retry(BiPredicate biPredicate) 出现错误，判断数据是否重新发送，最后传出异常   true：重新发送    false：停止
+Observable.create(new ObservableOnSubscribe<Integer>() {
+    @Override
+    public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        emitter.onNext(1);
+        emitter.onNext(2);
+        emitter.onError(new NullPointerException());
+        emitter.onNext(3);
+    }
+}).retry(new BiPredicate<Integer, Throwable>() {
+    @Override
+    public boolean test(Integer integer, Throwable throwable) throws Exception {
+        log("循环次数："+integer);
+        if(integer == 3) return false;
+        else return true;
+    }
+}).subscribe(new Observer<Integer>() {
+    @Override
+    public void onSubscribe(Disposable d) {
+
+    }
+
+    @Override
+    public void onNext(Integer integer) {
+        log("值："+integer);
+    }
+
+    @Override
+    public void onError(Throwable e) {
+        log("错误");
+    }
+
+    @Override
+    public void onComplete() {
+
+    }
+});
+-------------结果--------------------------
+I/wangyin: 值：1
+I/wangyin: 值：2
+I/wangyin: 循环次数：1
+I/wangyin: 值：1
+I/wangyin: 值：2
+I/wangyin: 循环次数：2
+I/wangyin: 值：1
+I/wangyin: 值：2
+I/wangyin: 循环次数：3
+I/wangyin: 错误
+
+
+// 5、retry（long time,Predicate predicate） 第一个参数：循环次数   第二个参数：是否循环
+
+```
+
+
+
+retryUntil
+--------------------------------------------
+作用：具体使用类似于retry（Predicate predicate），唯一区别：返回 true 则不重新发送数据事件</br>
+
+
+
+
+repeat
+----------------------------------------------------------------
+作用：无条件地、重复发送 被观察者事件</br>
+```java
+
+// repeat() 不传入参数，直接一直循环下去
+// repeatWhen(long time)  发送的次数
+
+//注意：emitter一定要添加emitter.onComplete()，不然不会执行循环事件
+
+Observable.create(new ObservableOnSubscribe<Integer>() {
+    @Override
+    public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        emitter.onNext(1);
+        emitter.onNext(2);
+        emitter.onComplete();
+        log("发送事件");
+    }
+}).repeat(3).subscribe(new Observer<Integer>() {
+    @Override
+    public void onSubscribe(Disposable d) {
+
+    }
+
+    @Override
+    public void onNext(Integer integer) {
+        log("值："+integer);
+    }
+
+    @Override
+    public void onError(Throwable e) {
+        log("异常");
+    }
+
+    @Override
+    public void onComplete() {
+        log("onComplete");
+    }
+});
+
+-----------结果-------------------------
+I/wangyin: 值：1
+I/wangyin: 值：2
+I/wangyin: 发送事件
+I/wangyin: 值：1
+I/wangyin: 值：2
+I/wangyin: 发送事件
+I/wangyin: 值：1
+I/wangyin: 值：2
+I/wangyin: onComplete
+I/wangyin: 发送事件
+
+```
+
+
+
+
+
+
+
 
 
