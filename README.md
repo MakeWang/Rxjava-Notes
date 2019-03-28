@@ -41,6 +41,8 @@ implementation 'io.reactivex.rxjava2:rxandroid:2.1.0'
 * [count() 统计被观察者发送事件的数量](#count)
 
 ## 功能性操作符
+* [delay() 延时多次时间执行观察者事件](#delay)
+* [do() 某个事件中的生命周期调用](#do)
 
 
 
@@ -186,6 +188,57 @@ Observable.range(1,10).subscribe(new Consumer<Integer>() {
 });
 
 ```
+
+delay
+-------------------------------------------------
+作用：使得被观察者延迟一段时间再发送事件</br>
+```java
+Observable.create(new ObservableOnSubscribe<Integer>() {
+    @Override
+    public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        emitter.onNext(1);
+        emitter.onNext(2);
+        emitter.onNext(3);
+        log("发送消息");
+    }
+}).delay(3, TimeUnit.SECONDS)
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(new Consumer<Integer>() {
+            @Override
+            public void accept(Integer integer) throws Exception {
+                log("值：" + integer);
+            }
+        });
+
+// 1. 指定延迟时间
+// 参数1 = 时间；参数2 = 时间单位
+delay(long delay,TimeUnit unit)
+
+// 2. 指定延迟时间 & 调度器
+// 参数1 = 时间；参数2 = 时间单位；参数3 = 线程调度器
+delay(long delay,TimeUnit unit,mScheduler scheduler)
+
+// 3. 指定延迟时间  & 错误延迟
+// 错误延迟，即：若存在Error事件，则如常执行，执行后再抛出错误异常
+// 参数1 = 时间；参数2 = 时间单位；参数3 = 错误延迟参数
+delay(long delay,TimeUnit unit,boolean delayError)
+
+// 4. 指定延迟时间 & 调度器 & 错误延迟
+// 参数1 = 时间；参数2 = 时间单位；参数3 = 线程调度器；参数4 = 错误延迟参数
+delay(long delay,TimeUnit unit,mScheduler scheduler,boolean delayError): 指定延迟多长时间并添加调度器，错误通知可以设置是否延迟
+
+
+
+        
+----------------结果-------------------------------------        
+I/wangyin: 发送消息
+-----------延时3秒
+I/wangyin: 值：1
+I/wangyin: 值：2
+I/wangyin: 值：3
+```
+
 
 
 map
@@ -715,6 +768,115 @@ I/wangyin: 值：4
 ```
 
 
+do
+-------------------------------------------------
+作用：在某个事件的生命周期中调用</br>
+```java
 
+//doOnEach          当Observable每次发送数据事件会调一次
+//doOnNext          执行Next事件前调用
+//doAfterNext       执行Next事件后调用
+//doOnComplete      Observable 事件发送完调用  
+//doOnError         Observable 发生错误事件调用  
+//doOnSubscribe     观察者订阅的时候调用
+//doAfterTerminate  Observable 发送事件完毕后调用，无论正常发送完毕或者异常终止
+//doFinally         最后执行
+
+Observable.create(new ObservableOnSubscribe<Integer>() {
+    @Override
+    public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        emitter.onNext(1);
+        emitter.onNext(2);
+        emitter.onError(new NullPointerException());
+        emitter.onNext(3);
+    }
+}).doOnEach(new Consumer<Notification<Integer>>() {
+    @Override
+    public void accept(Notification<Integer> integerNotification) throws Exception {
+        //当Observable每次发送数据事件会调一次
+        log("doOnEach 每次发送数据事件会调一次");
+    }
+}).doOnNext(new Consumer<Integer>() {
+    @Override
+    public void accept(Integer integer) throws Exception {
+        //执行Next事件前调用
+        log("doOnNext 执行Next事件前调用");
+    }
+}).doAfterNext(new Consumer<Integer>() {
+    @Override
+    public void accept(Integer integer) throws Exception {
+        //执行Next事件后调用
+        log("doAfterNext 执行Next事件后调用");
+    }
+}).doOnComplete(new Action() {
+    @Override
+    public void run() throws Exception {
+        //Observable 事件发送完调用
+        log("doOnComplete 执行Next事件后调用");
+    }
+}).doOnError(new Consumer<Throwable>() {
+    @Override
+    public void accept(Throwable throwable) throws Exception {
+        //Observable 发生错误事件调用
+        log("doOnError 执行Next事件后调用");
+    }
+}).doOnSubscribe(new Consumer<Disposable>() {
+    @Override
+    public void accept(Disposable disposable) throws Exception {
+        //观察者订阅的时候调用
+        log("doOnSubscribe 观察者订阅的时候调用");
+    }
+}).doAfterTerminate(new Action() {
+    @Override
+    public void run() throws Exception {
+        //Observable 发送事件完毕后调用，无论正常发送完毕或者异常终止
+        log("doAfterTerminate 发送事件完毕后或异常终止");
+    }
+}).doFinally(new Action() {
+    @Override
+    public void run() throws Exception {
+        // 最后执行
+        log("最后执行");
+    }
+}).subscribe(new Observer<Integer>() {
+    @Override
+    public void onSubscribe(Disposable d) {
+        log("subscribe  onSubscribe");
+    }
+
+    @Override
+    public void onNext(Integer integer) {
+        log("subscribe  onNext:"+integer);
+    }
+
+    @Override
+    public void onError(Throwable e) {
+        log("subscribe  onError:"+e);
+    }
+
+    @Override
+    public void onComplete() {
+        log("subscribe  onComplete:");
+    }
+});
+
+------------结果-------------------------
+I/wangyin: doOnSubscribe 观察者订阅的时候调用
+I/wangyin: subscribe  onSubscribe
+I/wangyin: doOnEach 每次发送数据事件会调一次
+I/wangyin: doOnNext 执行Next事件前调用
+I/wangyin: subscribe  onNext:1
+I/wangyin: doAfterNext 执行Next事件后调用
+I/wangyin: doOnEach 每次发送数据事件会调一次
+I/wangyin: doOnNext 执行Next事件前调用
+I/wangyin: subscribe  onNext:2
+I/wangyin: doAfterNext 执行Next事件后调用
+I/wangyin: doOnEach 每次发送数据事件会调一次
+I/wangyin: doOnError 执行Next事件后调用
+I/wangyin: subscribe  onError:java.lang.NullPointerException
+I/wangyin: 最后执行
+I/wangyin: doAfterTerminate 发送事件完毕后或异常终止
+
+```
 
 
