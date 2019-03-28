@@ -33,6 +33,11 @@ Rxjava的一些操作符整理
 * [reduce() 将一个被观察者前2个数据聚合后，再进行聚合合并后一起输出](#reduce)
 * [collect() 将数据收集到一个数据结构中](#collect)
 * [startWith() 在被观察者前面追加一些新的被观察者数据](#startWith)
+* [startWithArray() 在被观察者前面追加一些新的被观察者数据集合](#startWithArray)
+* [count() 统计被观察者发送事件的数量](#count)
+
+## 功能性操作符
+
 
 
 just
@@ -645,14 +650,65 @@ Observable.just(1, 2, 3, 4, 5, 6).collect(new Callable<ArrayList<Integer>>() {
 startWith
 -----------------------------------------------
 作用：在一个被观察者发送事件前，追加发送一些数据/一个新的被观察者</br>
+```java
+Observable.just(1,2,3,4).startWith(0).subscribe(new Consumer<Integer>() {
+    @Override
+    public void accept(Integer integer) throws Exception {
+        log("值："+integer);
+    }
+});
+
+--------------结果---------------
+I/wangyin: 值：0
+I/wangyin: 值：1
+I/wangyin: 值：2
+I/wangyin: 值：3
+I/wangyin: 值：4
+
+```
 
 
 
+startWithArray
+----------------------------------------------
+作用：在一个被观察者发送事件前，追加发送一些数据集合</br>
+```java
+Observable.just(1,2,3,4).startWith(0).startWithArray(5,6,7).subscribe(new Consumer<Integer>() {
+    @Override
+    public void accept(Integer integer) throws Exception {
+        log("值："+integer);
+    }
+});
+
+---------------结果-------------------
+I/wangyin: 值：5
+I/wangyin: 值：6
+I/wangyin: 值：7
+I/wangyin: 值：0
+I/wangyin: 值：1
+I/wangyin: 值：2
+I/wangyin: 值：3
+I/wangyin: 值：4
 
 
+```
+
+count
+---------------------------------------
+作用：统计被观察者发送事件的数量</br>
+```java
+Observable.just(1,2,3,4).count().subscribe(new Consumer<Long>() {
+    @Override
+    public void accept(Long aLong) throws Exception {
+        log("值："+aLong);
+    }
+});
 
 
+----------------结果------------------------
+I/wangyin: 值：4
 
+```
 
 
 
