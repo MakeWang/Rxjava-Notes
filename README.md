@@ -7,7 +7,7 @@ implementation 'io.reactivex.rxjava2:rxandroid:2.1.0'
 ```
 
 ## 被观察者操作符<br/>
-* [Observable()与Flowable()的区别](#Observable/Flowable)
+* [Observable()与Flowable()的区别](#Observable与Flowable区别)
 * [Single()](#Single)
 * [Completable()](#Completable)
 * [Maybe()](#Maybe)
@@ -59,7 +59,7 @@ implementation 'io.reactivex.rxjava2:rxandroid:2.1.0'
 
 
 
-Observable/Flowable
+Observable与Flowable区别
 --------------------------------------
 区别：</br>
     同步：Observable与Flowable都是被观察者发送当前事件之后，一直阻塞到观察者处理完当前事件之后，才会发送下一个事件。
