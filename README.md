@@ -62,8 +62,8 @@ implementation 'io.reactivex.rxjava2:rxandroid:2.1.0'
 Observable与Flowable区别
 --------------------------------------
 区别：</br>
-    同步：Observable与Flowable都是被观察者发送当前事件之后，一直阻塞到观察者处理完当前事件之后，才会发送下一个事件。
-    异步：Observable异步情况下，被观察者不停的发送事件，知道所有事件发送完，不管观察者是否能及时处理，就会造成大量的事件在缓存区等待处理，造成内存不断增加，甚至OOM；就需要采用Flowable的被压策略；
+    同步：Observable与Flowable都是被观察者发送当前事件之后，一直阻塞到观察者处理完当前事件之后，才会发送下一个事件。</br>
+    异步：Observable异步情况下，被观察者不停的发送事件，知道所有事件发送完，不管观察者是否能及时处理，就会造成大量的事件在缓存区等待处理，造成内存不断增加，甚至OOM；就需要采用Flowable的被压策略；</br>
 
 Flowable使用：
 ```java
