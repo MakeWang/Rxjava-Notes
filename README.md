@@ -6,6 +6,13 @@ implementation 'io.reactivex.rxjava2:rxjava:2.2.3'
 implementation 'io.reactivex.rxjava2:rxandroid:2.1.0'
 ```
 
+## 被观察者操作符<br/>
+* [Observable()与Flowable()的区别](#Observable/Flowable)
+* [Single()](#Single)
+* [Completable()](#Completable)
+* [Maybe()](#Maybe)
+
+
 ## 快速创建事件<br/>
 * [just() 直接发送事件，最多只能发送10个参数](#just)
 * [fromArray() 直接传入数组发送事件](#fromArray)
@@ -49,6 +56,142 @@ implementation 'io.reactivex.rxjava2:rxandroid:2.1.0'
 * [retry() 重试,出现异常时，让观察者重新发送数据](#retry)
 * [retryUntil() 和retry一样，出现错误后，判断是否需要重新发送数据](#retryUntil)
 * [repeat() 重复创建被观察者发送数据](#repeat)
+
+
+
+Observable/Flowable
+--------------------------------------
+区别：</br>
+    同步：Observable与Flowable都是被观察者发送当前事件之后，一直阻塞到观察者处理完当前事件之后，才会发送下一个事件。
+    异步：Observable异步情况下，被观察者不停的发送事件，知道所有事件发送完，不管观察者是否能及时处理，就会造成大量的事件在缓存区等待处理，造成内存不断增加，甚至OOM；就需要采用Flowable的被压策略；
+
+Flowable使用：
+```java
+Flowable.create(new FlowableOnSubscribe<Integer>() {
+    @Override
+    public void subscribe(FlowableEmitter<Integer> emitter) throws Exception {
+        int i = 0;
+        while(true){
+            i++;
+            Log.i("wangyin","发射："+i);
+            emitter.onNext(i);
+        }
+    }
+}, BackpressureStrategy.BUFFER)
+        .observeOn(Schedulers.io())
+        .subscribeOn(AndroidSchedulers.mainThread())
+        .subscribe(new Subscriber<Integer>() {
+    @Override
+    public void onSubscribe(Subscription s) {
+        s.request(Long.MAX_VALUE);
+    }
+
+    @Override
+    public void onNext(Integer integer) {
+        try {
+            Thread.sleep(5000);
+            Log.e("wangyin","接收："+integer);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onError(Throwable t) {
+    }
+
+    @Override
+    public void onComplete() {
+    }
+});
+```
+
+
+Single
+-----------------------------------
+作用：是Observable的简化版，只能发射单一的一条数据，或者一条异常通知，不能发射完成通知；</br>
+```java
+Single.create(new SingleOnSubscribe<Integer>() {
+    @Override
+    public void subscribe(SingleEmitter<Integer> emitter) throws Exception {
+        Log.i("wangyin","发："+1);
+        emitter.onSuccess(1);
+        Log.i("wangyin","发："+2);
+        emitter.onSuccess(2);
+    }
+}).subscribe(new SingleObserver<Integer>() {
+    @Override
+    public void onSubscribe(Disposable d) {
+    }
+    @Override
+    public void onSuccess(Integer integer) {
+        Log.e("wangyin","收："+integer);
+    }
+    @Override
+    public void onError(Throwable e) {
+    }
+});
+```
+
+Completable
+------------------------------
+作用：只发射一条完成通知，或者一条异常通知，不能发射数据，其中完成完成通知和异常通知只能发射一个。</br>
+```java
+Completable.create(new CompletableOnSubscribe() {
+    @Override
+    public void subscribe(CompletableEmitter emitter) throws Exception {
+        emitter.onComplete();
+    }
+}).subscribe(new CompletableObserver() {
+    @Override
+    public void onSubscribe(Disposable d) {
+
+    }
+
+    @Override
+    public void onComplete() {
+
+    }
+
+    @Override
+    public void onError(Throwable e) {
+
+    }
+});
+```
+
+
+Maybe
+------------------------------------
+作用：可发射一条单一的数据，以及发射一条完成通知，或者一条异常通知，其中完成通知和异常通知只能发射一个，发射数据只能在发射完成通知或者异常通知之前，否则发射数据无效。</br>
+```java
+Maybe.create(new MaybeOnSubscribe<String>() {
+    @Override
+    public void subscribe(MaybeEmitter<String> emitter) throws Exception {
+        emitter.onSuccess("OK");
+    }
+}).subscribe(new MaybeObserver<String>() {
+    @Override
+    public void onSubscribe(Disposable d) {
+
+    }
+
+    @Override
+    public void onSuccess(String s) {
+        Log.i("wangyin","结果："+s);
+    }
+
+    @Override
+    public void onError(Throwable e) {
+
+    }
+
+    @Override
+    public void onComplete() {
+        Log.i("wangyin","onComplete");
+    }
+});
+```
 
 
 
